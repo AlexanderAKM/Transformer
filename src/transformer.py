@@ -1,5 +1,5 @@
-#https://www.youtube.com/watch?v=ISNdQcPhsts&t=9595s
-
+#https://www.youtube.com/watch?v=ISNdQcPhsts&t=9595s for the transformers
+# https://www.youtube.com/watch?v=kCc8FmEb1nY For the GPT
 
 '''Start with the input embedding. The original input is converted into
    a vocabulary with size being the number of words.
