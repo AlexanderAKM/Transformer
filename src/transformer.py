@@ -1,3 +1,27 @@
+
+
+
+'''Start with the input embedding. The original input is converted into
+   a vocabulary with size being the number of words.
+   The Each word will then reflect a position in the vocabulary and will 
+   get the corresponding input ID. Then each number corresponds to an 
+   embedding which is a vector of size 512. In the paper this is a learned embedding.
+'''
+import torch 
+import torch.nn as nn
+
+class InputEmbeddings(nn.Module):
+    
+    def __init__(self, d_model: int, vocab_size: int):
+        super().__init()
+        self.d_model = d_model
+        self.vocab_size = vocab_size
+        self.embedding = nn.Embedding(vocab_size, d_model)
+        
+
+
+
+
 # https://levelup.gitconnected.com/understanding-transformers-from-start-to-end-a-step-by-step-math-example-16d4e64e6eb1
 '''
 1. Create a small dataset of words to use for the Transformer.
