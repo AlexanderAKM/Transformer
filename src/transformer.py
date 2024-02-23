@@ -171,7 +171,18 @@ class EncoderBlock(nn.Module):
       x = self.residual_connection[1](x, self.feed_forward_block)
       return x
    
-   
+class Encoder(nn.Module):
+
+   def __init__(self, layers: nn.ModuleList):
+      super().__init__()
+      self.layers = layers
+      self.norm = LayerNormalization()
+
+   def forward(self, x, mask):
+      for layer in self.layers:
+         x = layer(x, mask)
+      
+      return self.norm(x)
 
 '''1. Create a small dataset of words to use for the Transformer.
 2. Find the vocab size (number of unique words in the dataset)
