@@ -95,10 +95,84 @@ class FeedForwardBlock(nn.Module):
 
 '''
 Now the multi-head attention'''
+
+class MultiHeadAttentionBlock(nn.Module):
+
+   def __init__(self, d_model: int, h: int, dropout: float) -> None:
+      super().__init__()
+      self.d_model = d_model
+      self.h = h
+      assert d_model % h == 0, "d_model is not divisible by h"
+
+      self.d_k = d_model // h
+      self.w_q = nn.Linear(d_model, d_model) # Wq
+      self.w_k = nn.Linear(d_model, d_model) # Wk
+      self.w_v = nn.Linear(d_model, d_model) # Wv
+
+      self.w_o = nn.Linear(d_model, d_model) #Wo
+      self.dropout = nn.Dropout(dropout)
+
+   @staticmethod # can call without having an instance
+   def attention(query, key, value, mask, dropout: nn.Dropout):
+      d_k = query.shape[-1]
+
+      # Here we do the Scaled dot-product attention. 
+      # (batch, h, seq_len, d_k) --> (batch, h, seq_len, seq_len)
+      attention_scores = (query @ key.transpose(-2, -1)) / math.sqrt(d_k)
+      if mask is not None:
+         attention_scores.masked_fill(mask == 0, -1e9)
+      attention_scores = attention_scores.softmax(dim = -1) # (batch, h, seq_len, seq_len)
+      if dropout is not None:
+         attention_scores = dropout(attention_scores)
+      
+      return (attention_scores @ value), attention_scores
+   
+   def forward(self, q, k, v, mask):
+      query = self.w_q(q) #(Batch, seq_len, d_model) --> (batch, seq_len, d_model)
+      key = self.w_k(k) #(Batch, seq_len, d_model) --> (batch, seq_len, d_model)
+      value = self.w_v(v) #(Batch, seq_len, d_model) --> (batch, seq_len, d_model)
+
+      # (Batch, seq_len, d_model) --> (batch, seq_len, h, d_k) --> (batch, h, seq_len, d_k)
+      # Every head will still see the whole sentence just with d_model/h embedding
+      query = query.view(query.shape[0], query.shape[1], self.h, self.d_k).transpose(1, 2)
+      key = key.view(key.shape[0], key.shape[1], self.h, self.d_k).transpose(1, 2)
+      value = value.view(value.shape[0], value.shape[1], self.h, self.d_k).transpose(1, 2)
+
+      x, self.attention_scores = MultiHeadAttentionBlock.attention(query, key, value, mask, self.dropout)
+      
+      # (batch, h, seq_len, d_k) --> (batch, seq_len, h, d_k) --> (batch, seq_len, d_model)
+      x = x.transpose(1, 2).contiguous().view(x.shape[0], -1, self.h * self.d_k)
+
+      # (batch, seq_len, d_model) --> (batch, seq_len, d_model)
+      return self.w_o(x)
+   
+class ResidualConnection(nn.Module):
+
+   def __init__(self, dropout: float) -> None:
+      super().__init__()
+      self.dropout = nn.Dropout(dropout)
+      self.norm = LayerNormalization()
+
+   def forward(self, x, sublayer):
+      # Normally first the normalization is done on the sublayer, but this seems to be a better implementation
+      return x + self.dropout(sublayer(self.norm(x))) 
+
+class EncoderBlock(nn.Module):
+
+   def __init__(self, self_attention_block: MultiHeadAttentionBlock, feed_forward_block: FeedForwardBlock, dropout: float) -> None:
+      super().__init__()
+      self.self_attention_block = self_attention_block
+      self.feed_forward_block = feed_forward_block
+      self.residual_connection = nn.ModuleList([ResidualConnection(dropout) for _ in range(2)])
+
+   # src_mask for encoder for the padding of the sequence
+   def forward(self, x, src_mask):
+      x = self.residual_connection[0](x, lambda x: self.self_attention_block(x, x, x, src_mask))
+      x = self.residual_connection[1](x, self.feed_forward_block)
+      return x
    
    
-   
-   
+
 '''1. Create a small dataset of words to use for the Transformer.
 2. Find the vocab size (number of unique words in the dataset)
 3. We assign a number to each word (encoding)
