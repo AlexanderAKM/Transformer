@@ -195,7 +195,7 @@ class DecoderBlock(nn.Module):
       self.self_attention_block = self_attention_block
       self.cross_attention_block = cross_attention_block
       self.feed_forward_block = feed_forward_block
-      self.residual_connections = nn.Module([ResidualConnection(dropout) for _ in range(3)])
+      self.residual_connections = nn.ModuleList([ResidualConnection(dropout) for _ in range(3)])
 
 # src_mask is the mask for the input so the original language, tgt from target language (decoder).
    def forward(self, x, encoder_output, src_mask, tgt_mask):
@@ -216,7 +216,7 @@ class Decoder(nn.Module):
          x = layer(x, encoder_output, src_mask, tgt_mask)
       return self.norm(x)
    
-class ProjectionLayer(nn.Module);
+class ProjectionLayer(nn.Module):
    
    def __init__(self, d_model: int, vocab_size: int) -> None:
       super().__init__()
