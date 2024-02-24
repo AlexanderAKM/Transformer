@@ -184,6 +184,45 @@ class Encoder(nn.Module):
       
       return self.norm(x)
 
+'''
+For Decoder The output embedding is same as input embedding and positional encoding is also already done
+'''
+
+class DecoderBlock(nn.Module):
+   
+   def __init__(self, self_attention_block: MultiHeadAttentionBlock, cross_attention_block: MultiHeadAttentionBlock, feed_forward_block: FeedForwardBlock, dropout: float) -> None:
+      super().__init__()
+      self.self_attention_block = self_attention_block
+      self.cross_attention_block = cross_attention_block
+      self.feed_forward_block = feed_forward_block
+      self.residual_connections = nn.Module([ResidualConnection(dropout) for _ in range(3)])
+
+# src_mask is the mask for the input so the original language, tgt from target language (decoder).
+   def forward(self, x, encoder_output, src_mask, tgt_mask):
+      x = self.residual_connections[0](x, lambda x: self.self_attention_block(x, x, x, tgt_mask))
+      x = self.residual_connections[1](x, lambda x: self.cross_attention_block(x, encoder_output, encoder_output, src_mask))
+      x = self.residual_connections[2](x, self.feed_forward_block)
+      return x
+   
+class Decoder(nn.Module):
+
+   def __init__(self, layers: nn.ModuleList) -> None:
+      super().__init__()
+      self.layers = layers
+      self.norm = LayerNormalization()
+
+   def forward(self, x, encoder_output, src_mask, tgt_mask):
+      for layer in self.layers:
+         x = layer(x, encoder_output, src_mask, tgt_mask)
+      return self.norm(x)
+   
+
+
+
+
+
+
+
 '''1. Create a small dataset of words to use for the Transformer.
 2. Find the vocab size (number of unique words in the dataset)
 3. We assign a number to each word (encoding)
