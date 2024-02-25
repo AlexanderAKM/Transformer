@@ -84,7 +84,7 @@ def run_validation(model, validation_ds, tokenizer_src, tokenizer_tgt, max_len, 
             print_msg(f'TARGET: {target_text}')
             print_msg(f'PREDICTED: {model_out_text}')
 
-            if coutn == num_example:
+            if count == num_example:
                 break
 
 def get_all_sentences(ds, lang):
@@ -184,7 +184,7 @@ def train_model(config):
             decoder_output = model.decode(encoder_output, encoder_mask, decoder_input, decoder_mask) # (batch, seq_len, d_model)
             proj_output = model.project(decoder_output) # (batch, seq_len, tgt_vocab_size)
 
-            label = batch['labe'].to(device) # (batch, seq_len)
+            label = batch['label'].to(device) # (batch, seq_len)
 
             # (batch, seq_len, tgt_vocab_size) --> (batch * seq_len, tgt_vocab_size)
             loss = loss_fn(proj_output.view(-1, tokenizer_tgt.get_vocab_size()), label.view(-1))

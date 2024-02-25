@@ -54,7 +54,7 @@ class PositionalEncoding(nn.Module):
       self.register_buffer('pe', pe)
 
    def forward(self, x):
-      x = x + (self.pe[:, :x.shape[1], :]).requires_grad(False) #False is for not learned
+      x = x + (self.pe[:, :x.shape[1], :]).requires_grad_(False) #False is for not learned
       return self.dropout(x)
 
 '''
@@ -239,7 +239,7 @@ class Transformer(nn.Module):
 
    def encode(self, src, src_mask):
       src = self.src_embed(src)
-      self = self.src_pos(src)
+      src = self.src_pos(src)
       return self.encoder(src, src_mask)
    
    def decode(self, encoder_output, src_mask, tgt, tgt_mask):
@@ -248,7 +248,7 @@ class Transformer(nn.Module):
       return self.decoder(tgt, encoder_output, src_mask, tgt_mask)
    
    def project(self, x):
-      return self.project_layer(x)
+      return self.projection_layer(x)
    
 def build_transformer(src_vocab_size: int, tgt_vocab_size: int, src_seq_len: int, tgt_seq_len: int, d_model: 512, N: int = 6, h: int = 8, dropout: float = 0.1, d_ff: int = 2048) -> Transformer:
    # Create the embedding layers
@@ -257,7 +257,7 @@ def build_transformer(src_vocab_size: int, tgt_vocab_size: int, src_seq_len: int
 
    # Create the positional encoding layers
    src_pos = PositionalEncoding(d_model, src_seq_len, dropout)
-   tgt_pos = PositionalEncoding(d_model, tgt_embed, dropout)
+   tgt_pos = PositionalEncoding(d_model, tgt_seq_len, dropout)
 
    # Create the encoder blocks
    encoder_blocks = []
